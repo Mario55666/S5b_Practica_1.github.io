@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Simulador · Auditoría perceptiva (movimiento continuo)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      color-scheme: light dark;
+      --bg: #0b0e1a;
+      --surface: #141b2b;
+      --surface-light: #1f2a3f;
+      --accent: #9f7cff;
+      --accent-soft: rgba(159, 124, 255, 0.2);
+      --accent-glow: rgba(159, 124, 255, 0.5);
+      --text: #f0f4ff;
+      --text-muted: #b0c0e0;
+      --border: #2c3650;
+      --success: #4caf92;
+      --warning: #ffb86b;
+      --error: #ff6b6b;
+      --card-bg: rgba(20, 30, 45, 0.7);
+      --hint: #ffd966;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at 30% 10%, #1f2b4a, #0a0e1a 90%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+      -webkit-tap-highlight-color: transparent;
+      backdrop-filter: blur(2px);
+    }
+
+    .layout {
+      max-width: 1400px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff, #c5d0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.2rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+      font-weight: 400;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.8rem;
+    }
+
+    @media (min-width: 1000px) {
+      .grid {
+        grid-template-columns: 1.2fr 1fr;
+      }
+    }
+
+    .cartel-wrapper {
+      border-radius: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(5, 8, 18, 0.7);
+      backdrop-filter: blur(12px);
+      padding: 1.2rem;
+      box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+    }
+
+    .cartel-frame {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto;
+      aspect-ratio: 9 / 16;
+      overflow: hidden;
+      border-radius: 28px;
+      background: #0b0e1a;
+      box-shadow: 0 20px 30px -10px black, 0 0 0 2px rgba(255, 255, 255, 0.05) inset;
+    }
+
+    .cartel-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: filter 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      will-change: transform, filter, opacity;
+    }
+
+    .badge {
+      position: absolute;
+      left: 1rem;
+      bottom: 1rem;
+      padding: 0.35rem 1rem;
+      border-radius: 40px;
+      background: rgba(10, 15, 30, 0.7);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+    }
+
+    .panel {
+      border-radius: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 22, 36, 0.8);
+      backdrop-filter: blur(16px);
+      padding: 1.5rem;
+      box-shadow: 0 30px 60px -20px black, 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+    }
+
+    .panel h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 0.6rem;
+    }
+
+    .filter-section {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 24px;
+      padding: 1.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .filter-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .filter-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .filter-btn {
+      padding: 0.7rem 0.3rem;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      -webkit-tap-highlight-color: transparent;
+      backdrop-filter: blur(4px);
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+      color: white;
+    }
+
+    .filter-info {
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      color: var(--hint);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.7rem 1rem;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .layers-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: 600px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent) rgba(255,255,255,0.05);
+    }
+
+    .layers-container::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .layers-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+    }
+
+    .layers-container::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 10px;
+    }
+
+    .layer-control {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 20px;
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(4px);
+      transition: transform 0.1s ease;
+    }
+
+    .layer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .layer-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .layer-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .layer-color-1 { background: #c79bff; box-shadow: 0 0 8px #c79bff; }
+    .layer-color-2 { background: #ffe074; box-shadow: 0 0 8px #ffe074; }
+    .layer-color-3 { background: #ff9f6e; box-shadow: 0 0 8px #ff9f6e; }
+    .layer-color-4 { background: #7ee0b0; box-shadow: 0 0 8px #7ee0b0; }
+    .layer-color-5 { background: #7bb3ff; box-shadow: 0 0 8px #7bb3ff; }
+
+    .layer-tag {
+      font-size: 0.65rem;
+      color: var(--accent);
+      background: rgba(159, 124, 255, 0.15);
+      padding: 0.2rem 0.8rem;
+      border-radius: 30px;
+      letter-spacing: 0.05em;
+    }
+
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.8fr;
+      gap: 0.5rem 0.8rem;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+
+    .sliders-grid label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 5px;
+      -webkit-appearance: none;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 50%, rgba(255,255,255,0.2) 50%);
+      border-radius: 10px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+      cursor: pointer;
+      margin-top: -7px;
+    }
+
+    .check-row {
+      margin-top: 0.7rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      border-radius: 6px;
+    }
+
+    .pan-layer-controls {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 0.8rem;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+    }
+
+    .pan-layer-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(30, 40, 60, 0.8);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .pan-layer-btn:active {
+      background: var(--accent);
+      transform: scale(0.9);
+    }
+
+    .pan-layer-btn.reset {
+      background: rgba(159, 124, 255, 0.3);
+      border-color: var(--accent);
+    }
+
+    @media (max-width: 480px) {
+      .pan-layer-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+      }
+    }
+
+    .osgood-section {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 24px;
+      padding: 1.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .osgood-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .polarity-item {
+      margin-bottom: 1.5rem;
+    }
+
+    .polarity-labels {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.3rem;
+      font-size: 0.75rem;
+    }
+
+    .polarity-left {
+      color: #ffa07a;
+      flex: 1;
+      font-weight: 400;
+    }
+
+    .polarity-right {
+      color: #a0d8b0;
+      flex: 1;
+      text-align: right;
+      font-weight: 400;
+    }
+
+    .polarity-value {
+      background: var(--accent);
+      color: white;
+      padding: 0.15rem 0.7rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin: 0 0.5rem;
+    }
+
+    .polarity-bar-container {
+      width: 100%;
+      height: 42px;
+      position: relative;
+      margin: 6px 0;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .polarity-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(90deg, #ffa07a 0%, #f1e7a0 50%, #a0d8b0 100%);
+      border-radius: 20px;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      box-shadow: 0 0 12px rgba(0,0,0,0.3);
+    }
+
+    .polarity-marker {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      background: white;
+      border: 3px solid var(--accent);
+      border-radius: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      cursor: grab;
+      box-shadow: 0 0 20px var(--accent-glow);
+      touch-action: none;
+      transition: box-shadow 0.1s;
+    }
+
+    .polarity-marker:active {
+      cursor: grabbing;
+      box-shadow: 0 0 30px var(--accent);
+    }
+
+    .conclusiones-section {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 24px;
+      padding: 1.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .conclusiones-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .student-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .student-info input {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border-radius: 40px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 0.8rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .student-info input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    .conclusion-item {
+      margin-bottom: 1.2rem;
+    }
+
+    .conclusion-item label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+      font-weight: 500;
+    }
+
+    .conclusion-item textarea {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 0.8rem;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .conclusion-item textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      padding: 0.7rem 1.4rem;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      -webkit-tap-highlight-color: transparent;
+      backdrop-filter: blur(4px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .btn-success {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .btn:hover {
+      transform: scale(1.02);
+      filter: brightness(1.1);
+    }
+
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--success);
+      color: white;
+      padding: 0.8rem 1.8rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 600px) {
+      .filter-buttons {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .action-buttons {
+        flex-direction: column;
+      }
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .student-info {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="layout">
+  <h1>🧪 Simulador · Auditoría perceptiva (movimiento continuo)</h1>
+  <div class="subtitle">Semana 5: Mantén presionado para movimiento continuo (destino común)</div>
+
+  <div class="grid">
+    <!-- CARTEL INTERACTIVO -->
+    <div class="cartel-wrapper">
+      <div class="cartel-frame" id="posterFrame">
+        <img id="layer5" class="cartel-layer" src="2_5.png" alt="Fondo" style="z-index:1">
+        <img id="layer4" class="cartel-layer" src="2_4.png" alt="Músico" style="z-index:2">
+        <img id="layer3" class="cartel-layer" src="2_3.png" alt="Texto oferta" style="z-index:3">
+        <img id="layer2" class="cartel-layer" src="2_2.png" alt="Redes / CTA" style="z-index:4">
+        <img id="layer1" class="cartel-layer" src="2_1.png" alt="Logo" style="z-index:5">
+        <div class="badge">📱 Capas 5 → 1 (fondo a logo)</div>
+      </div>
+    </div>
+
+    <!-- PANEL DE CONTROL -->
+    <div class="panel">
+      <h2><span>⚙️</span> Controles de prueba perceptiva</h2>
+
+      <!-- FILTROS DALTONISMO -->
+      <div class="filter-section">
+        <div class="filter-title">
+          <span>👁️</span>
+          <span>Simulación de daltonismo (compatible con Android)</span>
+        </div>
+        <div class="filter-buttons">
+          <button class="filter-btn" id="filter-normal" onclick="setColorFilter('normal')">🌓 Normal</button>
+          <button class="filter-btn" id="filter-protanopia" onclick="setColorFilter('protanopia')">🔴 Protanopia</button>
+          <button class="filter-btn" id="filter-deuteranopia" onclick="setColorFilter('deuteranopia')">🟢 Deuteranopia</button>
+          <button class="filter-btn" id="filter-tritanopia" onclick="setColorFilter('tritanopia')">🔵 Tritanopia</button>
+          <button class="filter-btn" id="filter-achromatopsia" onclick="setColorFilter('achromatopsia')">⚫ Acromatopsia</button>
+        </div>
+        <div class="filter-info">
+          <span>💡</span> Los filtros simulan cómo perciben los colores personas con daltonismo. Útil para diseñar accesible.
+        </div>
+      </div>
+
+      <!-- CAPAS (5 capas) con botones de desplazamiento continuo -->
+      <div class="layers-container" id="layersContainer"></div>
+
+      <!-- PERFIL OSGOOD INTERACTIVO -->
+      <div class="osgood-section">
+        <div class="osgood-title">
+          <span>📊</span>
+          <span>Perfil de polaridades de Osgood (toca/arrastra)</span>
+        </div>
+        <div id="osgoodContainer"></div>
+      </div>
+
+      <!-- CAMPOS DE RESPUESTA (CONCLUSIONES) -->
+      <div class="conclusiones-section">
+        <div class="conclusiones-title">
+          <span>📝</span>
+          <span>Tus conclusiones (tras experimentar)</span>
+        </div>
+
+        <div class="student-info">
+          <input type="text" id="studentName" placeholder="👤 Nombre completo">
+          <input type="email" id="studentEmail" placeholder="📧 Correo electrónico">
+        </div>
+
+        <div class="conclusion-item">
+          <label>1. Jerarquía visual (¿qué elemento capta primero? ¿por qué?)</label>
+          <textarea id="resp1" placeholder="Escribe tu análisis..."></textarea>
+        </div>
+        <div class="conclusion-item">
+          <label>2. Principios Gestalt identificados (proximidad, similitud, continuidad, cierre...)</label>
+          <textarea id="resp2" placeholder="Ej: en capa 2 veo similitud por íconos..."></textarea>
+        </div>
+        <div class="conclusion-item">
+          <label>3. Relación figura‑fondo y códigos visuales (colores, símbolos culturales)</label>
+          <textarea id="resp3" placeholder="Analiza contraste, ambigüedad, significados..."></textarea>
+        </div>
+        <div class="conclusion-item">
+          <label>4. Impacto de los filtros de daltonismo (¿se pierde información?)</label>
+          <textarea id="resp4" placeholder="Prueba los 5 filtros y comenta..."></textarea>
+        </div>
+        <div class="conclusion-item">
+          <label>5. Comparación de configuraciones y mejora propuesta</label>
+          <textarea id="resp5" placeholder="¿Qué funciona mejor y por qué?"></textarea>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="action-buttons">
+          <button class="btn" onclick="clearForm()">🗑️ Limpiar</button>
+          <button class="btn btn-success" onclick="generatePDF()">📄 PDF (simulado)</button>
+          <button class="btn btn-primary" onclick="sendEmail()">📧 Enviar a c12139@utp.edu.pe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p><strong>Docente:</strong> Mg Mario Quiroz · <strong>Curso:</strong> Semiótica de la Imagen · 2026 · Semana 5</p>
+  </footer>
+
+  <div id="toast" class="toast">✅ Acción completada</div>
+</div>
+
+<!-- FILTROS SVG (compatibles con Android) -->
+<svg style="position:absolute; width:0; height:0; overflow:hidden;">
+  <defs>
+    <filter id="protanopia-filter">
+      <feColorMatrix type="matrix" values="0.567,0.433,0,0,0  0.558,0.442,0,0,0  0,0.242,0.758,0,0  0,0,0,1,0"/>
+    </filter>
+    <filter id="deuteranopia-filter">
+      <feColorMatrix type="matrix" values="0.625,0.375,0,0,0  0.7,0.3,0,0,0  0,0.3,0.7,0,0  0,0,0,1,0"/>
+    </filter>
+    <filter id="tritanopia-filter">
+      <feColorMatrix type="matrix" values="0.95,0.05,0,0,0  0,0.433,0.567,0,0  0,0.475,0.525,0,0  0,0,0,1,0"/>
+    </filter>
+  </defs>
+</svg>
+
+<script>
+  // CONFIGURACIÓN DE 5 CAPAS
+  const layers = [
+    { id:1, name:'Logo / marca', hint:'Cierre / pregnancia del logo', color:'c79bff', tag:'1_1.png', blur:0, opacity:100, contrast:130, scale:100 },
+    { id:2, name:'Redes sociales (CTA)', hint:'Similitud (íconos iguales, mismo color)', color:'ffe074', tag:'1_2.png', blur:0, opacity:100, contrast:120, scale:100 },
+    { id:3, name:'Titular / texto', hint:'Figura principal (jerarquía del titular)', color:'ff9f6e', tag:'1_3.png', blur:0, opacity:100, contrast:125, scale:100 },
+    { id:4, name:'Músico / usuario', hint:'Continuidad (dirección de la guitarra)', color:'7ee0b0', tag:'1_4.png', blur:0, opacity:100, contrast:110, scale:103 },
+    { id:5, name:'Fondo / ornamentos', hint:'Proximidad / repetición de puntos', color:'7bb3ff', tag:'1_5.png', blur:2, opacity:90, contrast:100, scale:100 }
+  ];
+
+  let currentFilter = 'normal';
+  let posiciones = {
+    1: { x: 0, y: 0 },
+    2: { x: 0, y: 0 },
+    3: { x: 0, y: 0 },
+    4: { x: 0, y: 0 },
+    5: { x: 0, y: 0 }
+  };
+  const LIMITE_PAN = 20;
+
+  // Variables para control de repetición
+  let repeticionActiva = {
+    timeout: null,
+    intervalo: null,
+    capa: null,
+    dx: 0,
+    dy: 0,
+    inicio: 0
+  };
+
+  function detenerRepeticion() {
+    if (repeticionActiva.timeout) {
+      clearTimeout(repeticionActiva.timeout);
+      repeticionActiva.timeout = null;
+    }
+    if (repeticionActiva.intervalo) {
+      clearInterval(repeticionActiva.intervalo);
+      repeticionActiva.intervalo = null;
+    }
+  }
+
+  function iniciarRepeticion(capa, dx, dy) {
+    detenerRepeticion();
+    repeticionActiva.capa = capa;
+    repeticionActiva.dx = dx;
+    repeticionActiva.dy = dy;
+    repeticionActiva.inicio = Date.now();
+
+    // Después de 200ms, comenzar repetición continua
+    repeticionActiva.timeout = setTimeout(() => {
+      repeticionActiva.intervalo = setInterval(() => {
+        moverCapa(capa, dx, dy);
+      }, 100); // 10 movimientos por segundo
+      repeticionActiva.timeout = null;
+    }, 200);
+  }
+
+  function finalizarRepeticion() {
+    const duracion = Date.now() - repeticionActiva.inicio;
+    // Si fue una pulsación corta (menos de 200ms) y no se activó el intervalo, mover una vez
+    if (duracion < 200 && !repeticionActiva.intervalo) {
+      if (repeticionActiva.timeout) {
+        clearTimeout(repeticionActiva.timeout);
+        repeticionActiva.timeout = null;
+      }
+      moverCapa(repeticionActiva.capa, repeticionActiva.dx, repeticionActiva.dy);
+    }
+    detenerRepeticion();
+    repeticionActiva.capa = null;
+  }
+
+  // Funciones de evento para touch
+  window.iniciarRepeticionTouch = (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    const capa = parseInt(btn.getAttribute('data-capa'));
+    const dx = parseInt(btn.getAttribute('data-dx'));
+    const dy = parseInt(btn.getAttribute('data-dy'));
+    iniciarRepeticion(capa, dx, dy);
+  };
+
+  window.finalizarRepeticionTouch = (e) => {
+    e.preventDefault();
+    finalizarRepeticion();
+  };
+
+  // Funciones para mouse
+  window.iniciarRepeticionMouse = (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    const capa = parseInt(btn.getAttribute('data-capa'));
+    const dx = parseInt(btn.getAttribute('data-dx'));
+    const dy = parseInt(btn.getAttribute('data-dy'));
+    iniciarRepeticion(capa, dx, dy);
+  };
+
+  window.finalizarRepeticionMouse = (e) => {
+    e.preventDefault();
+    finalizarRepeticion();
+  };
+
+  function moverCapa(capa, dx, dy) {
+    let nuevaX = posiciones[capa].x + dx;
+    let nuevaY = posiciones[capa].y + dy;
+    nuevaX = Math.max(-LIMITE_PAN, Math.min(LIMITE_PAN, nuevaX));
+    nuevaY = Math.max(-LIMITE_PAN, Math.min(LIMITE_PAN, nuevaY));
+    posiciones[capa].x = nuevaX;
+    posiciones[capa].y = nuevaY;
+    actualizarPosicionCapa(capa);
+  }
+
+  function resetCapa(capa) {
+    posiciones[capa].x = 0;
+    posiciones[capa].y = 0;
+    actualizarPosicionCapa(capa);
+  }
+
+  function actualizarPosicionCapa(capa) {
+    const img = document.getElementById(`layer${capa}`);
+    if (!img) return;
+    const { x, y } = posiciones[capa];
+    const scaleSlider = document.getElementById(`scale${capa}`);
+    const escala = scaleSlider ? scaleSlider.value / 100 : 1;
+    img.style.transform = `translate(${x}%, ${y}%) scale(${escala})`;
+  }
+
+  // INICIALIZAR INTERFAZ DE CAPAS
+  function initLayers() {
+    const container = document.getElementById('layersContainer');
+    if (!container) return;
+    container.innerHTML = layers.map(l => `
+      <div class="layer-control" data-layer="${l.id}">
+        <div class="layer-header">
+          <div class="layer-name">
+            <span class="layer-color layer-color-${l.id}"></span>
+            <span>Capa ${l.id} · ${l.name}</span>
+          </div>
+          <span class="layer-tag">${l.tag}</span>
+        </div>
+        <div class="sliders-grid">
+          <label>Desenfoque</label>
+          <input type="range" min="0" max="12" value="${l.blur}" id="blur${l.id}" oninput="updateLayer(${l.id})">
+          <label>Opacidad %</label>
+          <input type="range" min="20" max="100" value="${l.opacity}" id="opacity${l.id}" oninput="updateLayer(${l.id})">
+          <label>Contraste %</label>
+          <input type="range" min="70" max="140" value="${l.contrast}" id="contrast${l.id}" oninput="updateLayer(${l.id})">
+          <label>Escala %</label>
+          <input type="range" min="90" max="115" value="${l.scale}" id="scale${l.id}" oninput="updateLayer(${l.id}); actualizarPosicionCapa(${l.id})">
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="gestalt${l.id}">
+          <label for="gestalt${l.id}">${l.hint}</label>
+        </div>
+        <div class="pan-layer-controls">
+          <button class="pan-layer-btn" data-capa="${l.id}" data-dx="-5" data-dy="0"
+            ontouchstart="iniciarRepeticionTouch(event)"
+            ontouchend="finalizarRepeticionTouch(event)"
+            ontouchcancel="finalizarRepeticionTouch(event)"
+            onmousedown="iniciarRepeticionMouse(event)"
+            onmouseup="finalizarRepeticionMouse(event)"
+            onmouseleave="finalizarRepeticionMouse(event)">←</button>
+          <button class="pan-layer-btn" data-capa="${l.id}" data-dx="5" data-dy="0"
+            ontouchstart="iniciarRepeticionTouch(event)"
+            ontouchend="finalizarRepeticionTouch(event)"
+            ontouchcancel="finalizarRepeticionTouch(event)"
+            onmousedown="iniciarRepeticionMouse(event)"
+            onmouseup="finalizarRepeticionMouse(event)"
+            onmouseleave="finalizarRepeticionMouse(event)">→</button>
+          <button class="pan-layer-btn" data-capa="${l.id}" data-dx="0" data-dy="-5"
+            ontouchstart="iniciarRepeticionTouch(event)"
+            ontouchend="finalizarRepeticionTouch(event)"
+            ontouchcancel="finalizarRepeticionTouch(event)"
+            onmousedown="iniciarRepeticionMouse(event)"
+            onmouseup="finalizarRepeticionMouse(event)"
+            onmouseleave="finalizarRepeticionMouse(event)">↑</button>
+          <button class="pan-layer-btn" data-capa="${l.id}" data-dx="0" data-dy="5"
+            ontouchstart="iniciarRepeticionTouch(event)"
+            ontouchend="finalizarRepeticionTouch(event)"
+            ontouchcancel="finalizarRepeticionTouch(event)"
+            onmousedown="iniciarRepeticionMouse(event)"
+            onmouseup="finalizarRepeticionMouse(event)"
+            onmouseleave="finalizarRepeticionMouse(event)">↓</button>
+          <button class="pan-layer-btn reset" onclick="resetCapa(${l.id})">↺</button>
+        </div>
+      </div>
+    `).join('');
+    layers.forEach(l => updateLayer(l.id));
+  }
+
+  function updateLayer(n) {
+    const img = document.getElementById(`layer${n}`);
+    if (!img) return;
+    const blur = document.getElementById(`blur${n}`)?.value || 0;
+    const op = document.getElementById(`opacity${n}`)?.value || 100;
+    const cont = document.getElementById(`contrast${n}`)?.value || 100;
+
+    let filter = `blur(${blur}px) contrast(${cont/100})`;
+    if (currentFilter !== 'normal') {
+      if (currentFilter === 'achromatopsia') {
+        filter += ' grayscale(1) contrast(1.2) brightness(0.9)';
+      } else {
+        filter += ` url(#${currentFilter}-filter)`;
+      }
+    }
+    img.style.filter = filter;
+    img.style.opacity = op / 100;
+    actualizarPosicionCapa(n);
+  }
+
+  function setColorFilter(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`filter-${type}`).classList.add('active');
+    for (let i = 1; i <= 5; i++) updateLayer(i);
+    showToast(`Filtro: ${type}`);
+  }
+
+  // PERFIL OSGOOD INTERACTIVO
+  const dimensions = [
+    { id:'dim1', left:'Riesgos', right:'Seguridad / Certeza', start:0.0 },
+    { id:'dim2', left:'Sesgos culturales', right:'Neutralidad cultural', start:0.0 },
+    { id:'dim3', left:'Investigación cultural', right:'Ignorancia cultural', start:0.0 },
+    { id:'dim4', left:'Adaptación regional', right:'Estandarización global', start:0.5 },
+    { id:'dim5', left:'Accesibilidad visual', right:'Inaccesibilidad visual', start:0.5 },
+    { id:'dim6', left:'Tecnología asistiva', right:'Tecnología convencional', start:0.0 }
+  ];
+
+  function initOsgood() {
+    const container = document.getElementById('osgoodContainer');
+    if (!container) return;
+    container.innerHTML = dimensions.map(d => `
+      <div class="polarity-item">
+        <div class="polarity-labels">
+          <span class="polarity-left">${d.left}</span>
+          <span class="polarity-value" id="${d.id}-value">${d.start.toFixed(2)}</span>
+          <span class="polarity-right">${d.right}</span>
+        </div>
+        <div class="polarity-bar-container" id="${d.id}-container"
+             ontouchstart="touchStart(event, '${d.id}')"
+             ontouchmove="touchMove(event, '${d.id}')"
+             ontouchend="touchEnd()"
+             onmousedown="mouseStart(event, '${d.id}')"
+             onmousemove="mouseMove(event, '${d.id}')"
+             onmouseup="mouseEnd()"
+             onmouseleave="mouseEnd()">
+          <div class="polarity-bar-bg"></div>
+          <div class="polarity-marker" id="${d.id}-marker" style="left:${d.start*100}%"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  let activeDim = null, isDragging = false;
+
+  function updatePosition(dim, clientX) {
+    const container = document.getElementById(`${dim}-container`);
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    let x = clientX - rect.left;
+    x = Math.max(0, Math.min(x, rect.width));
+    const percent = (x / rect.width) * 100;
+    const value = percent / 100;
+    document.getElementById(`${dim}-marker`).style.left = `${percent}%`;
+    document.getElementById(`${dim}-value`).textContent = value.toFixed(2);
+  }
+
+  window.touchStart = (e, dim) => { e.preventDefault(); activeDim = dim; isDragging = true; updatePosition(dim, e.touches[0].clientX); };
+  window.touchMove = (e, dim) => { if (!isDragging || activeDim !== dim) return; e.preventDefault(); updatePosition(dim, e.touches[0].clientX); };
+  window.touchEnd = () => { isDragging = false; activeDim = null; };
+  window.mouseStart = (e, dim) => { e.preventDefault(); activeDim = dim; isDragging = true; updatePosition(dim, e.clientX); };
+  window.mouseMove = (e, dim) => { if (!isDragging || activeDim !== dim) return; e.preventDefault(); updatePosition(dim, e.clientX); };
+  window.mouseEnd = () => { isDragging = false; activeDim = null; };
+
+  // FUNCIONES DE FORMULARIO
+  function clearForm() {
+    document.getElementById('studentName').value = '';
+    document.getElementById('studentEmail').value = '';
+    document.getElementById('resp1').value = '';
+    document.getElementById('resp2').value = '';
+    document.getElementById('resp3').value = '';
+    document.getElementById('resp4').value = '';
+    document.getElementById('resp5').value = '';
+    showToast('Campos limpiados');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function sendEmail() {
+    const name = document.getElementById('studentName').value.trim();
+    const email = document.getElementById('studentEmail').value.trim();
+    if (!name || !email) { alert('Completa nombre y correo'); return; }
+    const q1 = document.getElementById('resp1').value;
+    const q2 = document.getElementById('resp2').value;
+    const q3 = document.getElementById('resp3').value;
+    const q4 = document.getElementById('resp4').value;
+    const q5 = document.getElementById('resp5').value;
+    const osgoodVals = dimensions.map(d => document.getElementById(d.id+'-value').textContent).join(', ');
+    const body = `Nombre: ${name}%0AEmail: ${email}%0A%0A1. Jerarquía: ${q1}%0A2. Gestalt: ${q2}%0A3. Figura‑fondo: ${q3}%0A4. Daltonismo: ${q4}%0A5. Comparación: ${q5}%0A%0AOsgood: ${osgoodVals}%0AFiltro activo: ${currentFilter}`;
+    window.location.href = `mailto:c12139@utp.edu.pe?subject=Auditoría perceptiva - ${name}&body=${body}`;
+    showToast('📧 Cliente de correo abierto');
+  }
+
+  function generatePDF() {
+    alert('📄 Función PDF simulada. En la versión completa se integraría jsPDF + html2canvas.');
+    showToast('PDF simulado');
+  }
+
+  // INICIALIZAR AL CARGAR
+  document.addEventListener('DOMContentLoaded', () => {
+    initLayers();
+    initOsgood();
+  });
+</script>
+</body>
+</html>
