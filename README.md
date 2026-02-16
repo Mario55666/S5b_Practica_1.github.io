@@ -17,5 +17,3 @@ Aplicar de manera autónoma los conocimientos sobre **etapas y tipos de percepci
 - **Campos de conclusiones**: Áreas de texto para responder las preguntas de la auditoría, junto con identificación del estudiante (nombre y correo).
 - **Exportación**: Envío de respuestas por correo electrónico (cliente predeterminado) y simulación de generación de PDF.
 - **Diseño responsivo**: Se adapta a pantallas pequeñas (máx. 430px) y grandes, manteniendo la usabilidad táctil.
-
-## 🧱 Estructura del proyecto
